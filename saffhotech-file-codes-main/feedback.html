@@ -1,0 +1,104 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feedback - Saffrontech</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) translateX(0);
+                opacity: 0;
+            }
+
+            10% {
+                opacity: 1;
+            }
+
+            90% {
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(-20vh) translateX(20px);
+                opacity: 0;
+            }
+        }
+
+        .floating-review {
+            position: absolute;
+            animation: float linear infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-white overflow-hidden font-sans">
+
+    <!-- Floating Background Layer -->
+    <div id="feedback-bg" class="fixed inset-0 overflow-hidden">
+        <!-- Javascript will inject reviews here -->
+    </div>
+
+    <!-- Main Content -->
+    <main class="relative z-10 flex items-center justify-center min-h-screen p-6">
+        <div class="bg-slate-900/80 backdrop-blur-md p-8 rounded-3xl border border-slate-800 w-full max-w-md shadow-2xl">
+            <h2 class="text-3xl font-black italic mb-2">WE VALUE YOU</h2>
+            <p class="text-slate-400 mb-6 text-sm">Please rate your experience at Saffrontech.</p>
+
+            <form id="feedbackForm" class="space-y-4">
+                <div class="flex justify-center gap-2 mb-4 text-2xl text-yellow-500">
+                    <i class="fa-regular fa-star cursor-pointer hover:fa-solid"></i>
+                    <i class="fa-regular fa-star cursor-pointer hover:fa-solid"></i>
+                    <i class="fa-regular fa-star cursor-pointer hover:fa-solid"></i>
+                    <i class="fa-regular fa-star cursor-pointer hover:fa-solid"></i>
+                    <i class="fa-regular fa-star cursor-pointer hover:fa-solid"></i>
+                </div>
+                <textarea class="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-sm focus:outline-none focus:border-blue-500" placeholder="Tell us more..." rows="4"></textarea>
+                <button type="submit" class="w-full py-4 bg-blue-600 rounded-xl font-bold uppercase tracking-widest text-xs">Submit Feedback</button>
+            </form>
+        </div>
+    </main>
+
+    <script>
+        const reviews = [
+            { name: "John D.", text: "Best stay ever! ⭐⭐⭐⭐⭐", color: "text-blue-400" },
+            { name: "Sarah K.", text: "Excellent service. ⭐⭐⭐⭐", color: "text-purple-400" },
+            { name: "Mike R.", text: "Very clean and professional! ⭐⭐⭐⭐⭐", color: "text-emerald-400" },
+            { name: "Anna L.", text: "Loved the interior design! ⭐⭐⭐⭐⭐", color: "text-pink-400" },
+            { name: "David W.", text: "Smooth check-in process. ⭐⭐⭐⭐", color: "text-orange-400" }
+        ];
+
+        function createFloatingReview() {
+            const container = document.getElementById('feedback-bg');
+            const review = reviews[Math.floor(Math.random() * reviews.length)];
+
+            const div = document.createElement('div');
+            div.className = `floating-review bg-slate-900/40 p-4 rounded-2xl border border-slate-800/50 ${review.color}`;
+
+            // Randomize position and speed
+            const startPos = Math.random() * 90; // percentage
+            const duration = 15 + Math.random() * 10; // 15-25 seconds
+            const delay = Math.random() * 5;
+
+            div.style.left = `${startPos}%`;
+            div.style.animationDuration = `${duration}s`;
+            div.style.animationDelay = `-${delay}s`;
+
+            div.innerHTML = `
+                <p class="font-bold text-xs">${review.name}</p>
+                <p class="text-sm italic">"${review.text}"</p>
+            `;
+
+            container.appendChild(div);
+        }
+
+        // Generate 10 floating reviews
+        for(let i = 0; i < 10; i++) {
+            createFloatingReview();
+        }
+    </script>
+</body>
+</html>

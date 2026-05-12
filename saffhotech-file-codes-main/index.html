@@ -1,0 +1,730 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAFFRONTECH | Guest Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .hidden {
+            display: none !important;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .neon-text {
+            text-shadow: 0 0 10px rgba(37, 99, 235, 0.5);
+        }
+
+        ::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 10px;
+        }
+
+        .btn-pending {
+            opacity: 0.6;
+            pointer-events: none;
+            background-color: #1e293b !important;
+            border-color: rgba(59, 130, 246, 0.5) !important;
+        }
+
+        .swal2-popup-custom {
+            border-radius: 2.5rem !important;
+            background: #020617 !important;
+            border: 1px solid #1e293b !important;
+        }
+
+        .swal2-title-custom {
+            font-style: italic !important;
+            font-weight: 900 !important;
+            letter-spacing: -0.05em !important;
+            color: white !important;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-white font-sans selection:bg-blue-500/30">
+
+    <!-- TERMINATION OVERLAY -->
+    <section id="terminationSection" class="hidden fixed inset-0 z-[500] bg-slate-950 flex flex-col items-center justify-center p-8 text-center">
+        <div class="w-24 h-24 bg-slate-900 rounded-[2.5rem] flex items-center justify-center mb-8 border border-slate-800">
+            <i class="fa-solid fa-hand-wave text-3xl text-blue-500"></i>
+        </div>
+        <h1 class="text-4xl font-black italic tracking-tighter mb-4">SESSION TERMINATED</h1>
+        <p class="text-slate-500 font-bold uppercase text-[10px] tracking-[0.3em] mb-12">Thank you for choosing Saffrontech</p>
+
+        <!-- Changed window.location.reload() to direct to your new page -->
+        <button onclick="window.location.href='feedback.html'" class="px-10 py-5 bg-blue-600 rounded-full font-black uppercase text-xs tracking-widest hover:bg-blue-700 transition-colors">
+            Return Home
+        </button>
+    </section>
+
+    <!-- ACCESS LOCKED SCREEN -->
+    <section id="entrySection" class="fixed inset-0 z-[200] bg-slate-950 flex flex-col items-center justify-center p-8">
+        <div class="w-20 h-20 bg-blue-600 rounded-[2rem] flex items-center justify-center mb-8 shadow-2xl animate-pulse">
+            <i class="fa-solid fa-key text-3xl text-white"></i>
+        </div>
+        <h1 class="text-4xl font-black italic tracking-tighter mb-2">ACCESS LOCKED</h1>
+        <p class="text-slate-500 font-bold uppercase text-[10px] tracking-[0.3em] mb-12">Room Node <span id="entryRoomNum" class="text-blue-500">--</span></p>
+        <button onclick="window.unlockDoor()" class="group relative px-12 py-6 bg-white rounded-[2.5rem] overflow-hidden transition-all active:scale-95">
+            <div class="absolute inset-0 bg-blue-600 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+            <span class="relative z-10 text-slate-950 group-hover:text-white font-black uppercase text-xs tracking-[0.2em]">Unlock Digital Key</span>
+        </button>
+    </section>
+
+    <!-- MAIN DASHBOARD -->
+    <main id="mainContent" class="hidden min-h-screen pb-40">
+        <header class="p-8 flex justify-between items-center sticky top-0 z-50 bg-slate-950/80 backdrop-blur-md">
+            <div>
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-ping"></span>
+                    <p class="text-[8px] font-black text-blue-500 uppercase tracking-[0.4em]">Welcome, <span id="guestNameDisplay">Guest</span></p>
+                </div>
+                <h2 id="roomDisplay" class="text-3xl font-black italic tracking-tighter uppercase">ROOM --</h2>
+            </div>
+            <button onclick="window.guestCheckOut()" class="w-12 h-12 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-red-500 active:scale-90">
+                <i class="fa-solid fa-power-off"></i>
+            </button>
+        </header>
+
+        <div class="px-8 grid grid-cols-1 gap-4 mb-8">
+            <div class="glass-card p-6 rounded-[2.5rem] flex flex-col items-center justify-center text-center">
+                <p class="text-[9px] font-black text-slate-500 uppercase mb-2">Time Remaining</p>
+                <div id="timerDisplay" class="text-4xl font-black tabular-nums neon-text">00:00:00</div>
+            </div>
+            <div class="glass-card p-6 rounded-[2.5rem]">
+                <p class="text-[9px] font-black text-slate-500 uppercase mb-3">Scheduled Checkout</p>
+                <div id="checkOutDisplay" class="text-sm font-black text-white leading-tight">Loading...</div>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <section class="px-8 space-y-4 mb-10">
+            <h3 class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">Environment & Security</h3>
+
+            <!-- Change your doorBtn div to this -->
+            <div id="doorBtn" onclick="window.toggleDoor()" class="glass-card p-6 rounded-[3rem] flex items-center justify-between cursor-pointer">
+                <div class="flex items-center">
+                    <div id="doorIconBg" class="w-12 h-12 bg-slate-800 rounded-2xl flex items-center justify-center mr-4">
+                        <i class="fa-solid fa-door-closed text-slate-500"></i>
+                    </div>
+                    <div>
+                        <p class="font-black text-xs uppercase italic">Room Security</p>
+                        <p id="doorStatus" class="text-[10px] font-bold text-slate-500 uppercase">Locked</p>
+                    </div>
+                </div>
+                <div id="doorToggleDot" class="w-12 h-6 bg-slate-700 rounded-full p-1">
+                    <div id="doorSwitch" class="w-4 h-4 bg-white rounded-full transition-transform"></div>
+                </div>
+            </div>
+
+            <div id="lightBtn" onclick="window.toggleLight()" class="glass-card p-6 rounded-[3rem] flex items-center justify-between cursor-pointer">
+                <div class="flex items-center">
+                    <div id="lightIconBg" class="w-12 h-12 bg-slate-800 rounded-2xl flex items-center justify-center mr-4">
+                        <i class="fa-solid fa-lightbulb text-slate-500"></i>
+                    </div>
+                    <div>
+                        <p class="font-black text-xs uppercase italic">Main Lighting</p>
+                        <p id="lightStatus" class="text-[10px] font-bold text-slate-500 uppercase">Inactive</p>
+                    </div>
+                </div>
+                <div id="lightCooldownOverlay" class="text-[9px] font-black text-slate-500 hidden uppercase">Wait <span id="lightCdSeconds">60</span>s</div>
+                <div id="lightToggleDot" class="w-12 h-6 bg-slate-700 rounded-full p-1">
+                    <div id="lightSwitch" class="w-4 h-4 bg-white rounded-full transition-transform"></div>
+                </div>
+            </div>
+
+            <div id="acBtn" onclick="window.toggleAC()" class="glass-card p-6 rounded-[3rem] flex items-center justify-between cursor-pointer">
+                <div class="flex items-center">
+                    <div id="acIconBg" class="w-12 h-12 bg-slate-800 rounded-2xl flex items-center justify-center mr-4">
+                        <i class="fa-solid fa-snowflake text-slate-500"></i>
+                    </div>
+                    <div>
+                        <p class="font-black text-xs uppercase italic">Air Conditioning</p>
+                        <p id="acStatus" class="text-[10px] font-bold text-slate-500 uppercase">Inactive</p>
+                    </div>
+                </div>
+                <div id="acCooldownOverlay" class="text-[9px] font-black text-slate-500 hidden uppercase">Wait <span id="acCdSeconds">60</span>s</div>
+                <div id="acToggleDot" class="w-12 h-6 bg-slate-700 rounded-full p-1">
+                    <div id="acSwitch" class="w-4 h-4 bg-white rounded-full transition-transform"></div>
+                </div>
+            </div>
+
+            <div id="extendBtn" onclick="window.requestExtension()" class="glass-card p-6 rounded-[3rem] border border-orange-500/20 flex items-center justify-between cursor-pointer mt-4">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-orange-500/10 rounded-2xl flex items-center justify-center mr-4">
+                        <i class="fa-solid fa-clock-rotate-left text-orange-500"></i>
+                    </div>
+                    <div>
+                        <p class="font-black text-xs uppercase italic text-orange-500">Extend Stay</p>
+                        <p class="text-[10px] font-bold text-slate-500 uppercase">Request 1 Hour</p>
+                    </div>
+                </div>
+                <i class="fa-solid fa-chevron-right text-[10px] text-orange-500/40"></i>
+            </div>
+        </section>
+
+        <!-- Services -->
+        <section class="px-8 space-y-8">
+            <div>
+                <h3 class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2 mb-4">Housekeeping & Prep</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <button id="btn-Cleaning" onclick="window.requestService('Cleaning')" class="glass-card p-6 rounded-[2.5rem] text-center">
+                        <i class="fa-solid fa-broom mb-2 text-xl text-slate-400"></i>
+                        <p id="label-Cleaning" class="font-black text-[9px] uppercase">Room Cleaning</p>
+                    </button>
+                    <button id="btn-Prep" onclick="window.requestService('Prep')" class="glass-card p-6 rounded-[2.5rem] text-center">
+                        <i class="fa-solid fa-bed mb-2 text-xl text-slate-400"></i>
+                        <p id="label-Prep" class="font-black text-[9px] uppercase">Linens/Prep</p>
+                    </button>
+                </div>
+            </div>
+            <div class="grid grid-cols-3 gap-3">
+                <button id="btn-Supplies" onclick="window.requestService('Supplies')" class="glass-card py-4 rounded-2xl text-center">
+                    <p id="label-Supplies" class="font-black text-[8px] uppercase">Soap/Shampoo</p>
+                </button>
+                <button id="btn-Water" onclick="window.requestService('Water')" class="glass-card py-4 rounded-2xl text-center">
+                    <p id="label-Water" class="font-black text-[8px] uppercase">Water/Tissue</p>
+                </button>
+                <button id="btn-Maintenance" onclick="window.requestService('Maintenance')" class="glass-card py-4 rounded-2xl text-center border-orange-500/20">
+                    <p id="label-Maintenance" class="font-black text-[8px] uppercase text-orange-500">Repairs</p>
+                </button>
+            </div>
+        </section>
+
+        <div class="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-xs">
+            <button id="trigger-Food_Order" onclick="document.getElementById('foodMenu').classList.remove('hidden')" class="w-full bg-blue-600 py-5 rounded-[2rem] shadow-xl flex items-center justify-center gap-4">
+                <i class="fa-solid fa-utensils text-sm"></i>
+                <span id="label-Food_Order" class="font-black text-[11px] uppercase tracking-[0.2em]">Open Dining Menu</span>
+            </button>
+        </div>
+    </main>
+
+    <!-- DINING MENU -->
+    <section id="foodMenu" class="hidden fixed inset-0 z-[300] bg-slate-950 flex flex-col p-8">
+        <div class="flex justify-between items-center mb-12">
+            <h2 class="text-4xl font-black italic tracking-tighter">DINING MENU</h2>
+            <button onclick="document.getElementById('foodMenu').classList.add('hidden')" class="text-slate-400 text-2xl"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div id="menuList" class="flex-grow overflow-y-auto space-y-4"></div>
+        <div class="pt-8 border-t border-slate-800">
+            <div class="flex justify-between items-center mb-6">
+                <span class="text-slate-500 font-black text-[10px] uppercase">Total</span>
+                <span id="cartTotal" class="text-2xl font-black">₱0.00</span>
+            </div>
+            <button onclick="window.submitFoodOrder()" class="w-full bg-white text-slate-950 py-6 rounded-[2.5rem] font-black uppercase text-xs tracking-widest">Confirm Order</button>
+        </div>
+    </section>
+
+    <!-- AI CHAT -->
+    <div id="aiChatWrapper" class="fixed bottom-32 right-6 z-[400] flex flex-col items-end">
+        <div id="aiChatWindow" class="hidden w-72 h-96 bg-slate-900 border border-slate-800 rounded-[2rem] shadow-2xl flex flex-col overflow-hidden mb-4">
+            <div class="p-4 bg-blue-600 flex justify-between items-center text-white">
+                <span class="text-[10px] font-black uppercase">AI Concierge</span>
+                <button onclick="document.getElementById('aiChatWindow').classList.add('hidden')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="aiMessages" class="flex-1 overflow-y-auto p-4 space-y-3 text-[11px]">
+                <div class="bg-slate-800 p-3 rounded-2xl rounded-tl-none">How can I help you today?</div>
+            </div>
+            <div class="p-3 border-t border-slate-800 flex gap-2">
+                <input type="text" id="aiInput" placeholder="Ask anything..." class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-[10px] text-white outline-none">
+                <button onclick="window.askAI()" class="w-8 h-8 bg-blue-600 rounded-xl text-white"><i class="fa-solid fa-paper-plane text-[10px]"></i></button>
+            </div>
+        </div>
+        <button onclick="document.getElementById('aiChatWindow').classList.toggle('hidden')" class="w-14 h-14 bg-blue-600 rounded-full shadow-lg flex items-center justify-center animate-bounce text-white">
+            <i class="fa-solid fa-robot text-xl"></i>
+        </button>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+        import { getDatabase, ref, onValue, update, get } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyB2TDKYbe4IvV6XxgXumAckU1dgUCAi_Bs",
+            authDomain: "simplechat-c7c92.firebaseapp.com",
+            databaseURL: "https://simplechat-c7c92-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "simplechat-c7c92",
+            storageBucket: "simplechat-c7c92.firebasedatabase.app",
+            messagingSenderId: "923838872623",
+            appId: "1:923838872623:web:bdc7bb53d724f06de91ada"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const params = new URLSearchParams(window.location.search);
+        const roomID = params.get('room');
+        const sessionKey = params.get('key');
+        const roomRef = ref(db, `rooms/${roomID}`);
+
+        let isLightCooldown = false, isAcCooldown = false, isTerminated = false, gracePeriodUsed = false;
+        let countdownInterval, heartbeatInterval, activeCooldowns = {}, cart = {};
+
+        const swalConfig = {
+            background: '#0f172a', color: '#ffffff', confirmButtonColor: '#2563eb',
+            customClass: { popup: 'swal2-popup-custom', title: 'swal2-title-custom' }
+        };
+
+        window.unlockDoor = async () => {
+            // 1. Identify the room
+            if (!roomID) return;
+
+            try {
+                // 2. Force the state to False (Unlocked)
+                // We also update 'lastSeen' so the Admin sees we are active
+                await update(ref(db, `rooms/${roomID}`), {
+                    isDoorLocked: false,
+                    lastSeen: Date.now(),
+                    forceGuestAccess: true // A new flag to tell the admin "Back off"
+                });
+
+                // 3. Manually hide the "Locked" UI overlay if it's stuck
+                document.getElementById('locked-screen').style.display = 'none';
+                document.getElementById('main-content').style.visibility = 'visible';
+
+            } catch (error) {
+                console.error("Manual override failed:", error);
+            }
+        };
+
+        // --- UPDATED AI CONCIERGE ---
+        window.askAI = async () => {
+            const input = document.getElementById('aiInput');
+            const msgBox = document.getElementById('aiMessages');
+            const text = input.value.trim().toLowerCase();
+
+            if (!text) return;
+
+            // 1. UI: Add User Message
+            msgBox.innerHTML += `
+            <div class="flex justify-end mb-2">
+                <div class="bg-blue-600 p-3 rounded-2xl rounded-tr-none max-w-[80%] text-white">
+                    ${text}
+                </div>
+            </div>`;
+
+            input.value = '';
+            msgBox.scrollTop = msgBox.scrollHeight;
+
+            let response = "I'm sorry, I didn't catch that. Try asking for 'cleaning', 'water', or 'repairs'.";
+            const now = Date.now();
+
+            try {
+                // 2. Keyword Mapping for Local Services
+                const serviceMap = {
+                    'cleaning': 'Cleaning', 'clean': 'Cleaning', 'broom': 'Cleaning',
+                    'prep': 'Prep', 'linen': 'Prep', 'bed': 'Prep',
+                    'supply': 'Supplies', 'soap': 'Supplies', 'shampoo': 'Supplies',
+                    'water': 'Water', 'tissue': 'Water',
+                    'repair': 'Maintenance', 'maintenance': 'Maintenance', 'fix': 'Maintenance'
+                };
+
+                let matchedService = Object.keys(serviceMap).find(k => text.includes(k));
+
+                // If it's a local service AND NOT a pool request
+                if (matchedService && !text.includes('pool')) {
+                    const type = serviceMap[matchedService];
+                    if (window.activeCooldowns && window.activeCooldowns[type]) {
+                        response = `The ${type} request is already pending. Please wait for the cooldown.`;
+                    } else {
+                        window.requestService(type);
+                        response = `Certainly! I have placed a request for **${type}**. Staff will be with you shortly.`;
+                    }
+                }
+
+                // 3. Logic for Pool Requests (Global Context)
+                else if (text.includes('pool')) {
+                    // Check if they are reporting a problem
+                    const isIssue = ['clean', 'dirty', 'maintenance', 'fix', 'clogged'].some(k => text.includes(k));
+
+                    if (isIssue) {
+                        // IMPORTANT: Ensure 'db', 'ref', 'get', 'update' are accessible globally
+                        // or imported at the top of your script.
+                        const globalPath = 'globalSettings/lastPoolCleaning';
+                        const poolRequestPath = 'globalPoolRequests';
+
+                        const globalRef = ref(db, globalPath);
+                        const snap = await get(globalRef);
+                        const last = snap.val() || 0;
+                        const cd = 3600000; // 1 hour cooldown
+
+                        if (now - last < cd) {
+                            const remMinutes = Math.ceil((cd - (now - last)) / 60000);
+                            response = `The pool maintenance was recently notified. (Cooldown: ${remMinutes}m remaining)`;
+                        } else {
+                            // Update Firebase
+                            await update(ref(db, 'globalSettings'), { lastPoolCleaning: now });
+                            await update(ref(db, poolRequestPath), {
+                                status: "Attention Required",
+                                roomOrigin: window.roomID || "Unknown Room",
+                                timestamp: now,
+                                message: "Reported via AI Concierge"
+                            });
+                            response = "I've notified the maintenance team about the **Pool Area**. Thank you for the report!";
+                        }
+                    } else {
+                        response = "The pool is located on the **3rd Floor Bay Area**. It is open daily from 6:00 AM to 10:00 PM.";
+                    }
+                }
+            } catch (error) {
+                console.error("AI Concierge Error:", error);
+                response = "I'm having trouble connecting to the system. Please try again or contact the front desk.";
+            }
+
+            // 4. UI: AI Response "Typing" effect
+            setTimeout(() => {
+                msgBox.innerHTML += `
+                <div class="flex justify-start mb-2">
+                    <div class="bg-slate-800 p-3 rounded-2xl rounded-tl-none max-w-[80%] text-white">
+                        ${response}
+                    </div>
+                </div>`;
+                msgBox.scrollTop = msgBox.scrollHeight;
+            }, 600);
+        };
+
+        // --- CORE LOGIC ---
+        // In your Guest Portal Script (index.html)
+        window.unlockDoor = async () => {
+            // 1. Fixed the variable name to match your global 'roomID'
+            if (!roomID) {
+                console.error("Room ID is missing from URL");
+                return;
+            }
+
+            const now = Date.now();
+            try {
+                // 2. Force the update to Firebase
+                await update(ref(db, `rooms/${roomID}`), {
+                    isDoorLocked: false,
+                    lastSeen: now,
+                    lastGuestUnlock: now,
+                    lighting: "ON",
+                    aircon: "ON",
+                    forceGuestAccess: true
+                });
+
+                console.log("Access Granted: Syncing...");
+
+                // 3. IMMEDIATE UI SWITCH:
+                // This stops the button from "blocking" you by hiding the lock screen right now
+                document.getElementById('entrySection').classList.add('hidden');
+                document.getElementById('mainContent').classList.remove('hidden');
+
+                // Ensure the global entry flag is set
+                hasEntered = true;
+
+            } catch (e) {
+                console.error("Connection error:", e);
+                Swal.fire({ ...swalConfig, title: 'SYNC ERROR', text: 'Check your internet connection.', icon: 'error' });
+            }
+        };
+        window.toggleDoor = async () => {
+            if (!roomID) return;
+
+            // 1. Look at the UI to see what the current status is
+            const statusText = document.getElementById('doorStatus').innerText.toLowerCase();
+
+            // 2. Determine the new state (If it says "locked", we want to set isDoorLocked to false)
+            const isCurrentlyLocked = (statusText === 'locked');
+            const newState = !isCurrentlyLocked;
+
+            try {
+                await update(ref(db, `rooms/${roomID}`), {
+                    isDoorLocked: newState, // This will now be true or false, never undefined
+                    lastSeen: Date.now()
+                });
+                console.log("Door sync successful. New state locked:", newState);
+            } catch (e) {
+                console.error("Lock sync failed:", e);
+            }
+        };
+
+        setInterval(() => {
+            if (roomID) {
+                update(ref(db, `rooms/${roomID}`), { lastSeen: Date.now() });
+            }
+        }, 10000)
+
+        window.toggleLight = () => {
+            if (isLightCooldown) return;
+            const current = document.getElementById('lightStatus').innerText.toUpperCase();
+            update(roomRef, { lighting: current === 'ACTIVE' ? 'OFF' : 'ON' }).then(() => startControlCooldown('light'));
+        };
+
+        window.toggleAC = async () => {
+            if (isAcCooldown) return;
+            const snap = await get(roomRef);
+            if (snap.exists()) update(roomRef, { aircon: snap.val().aircon === 'ON' ? 'OFF' : 'ON' }).then(() => startControlCooldown('ac'));
+        };
+
+        window.requestService = async (type) => {
+            const serviceRef = ref(db, `rooms/${roomID}/serviceRequests/${type}`);
+            const snap = await get(serviceRef);
+            if (snap.exists() && snap.val().status === "pending") return;
+
+            update(ref(db, `rooms/${roomID}/serviceRequests`), { [type]: { status: "pending", timestamp: Date.now() } })
+                .then(() => {
+                    Swal.fire({ ...swalConfig, title: 'SENT', text: 'Staff notified.', icon: 'success', timer: 2000, showConfirmButton: false });
+                    startServiceCooldown(type);
+                });
+        };
+
+        window.requestExtension = async () => {
+            // 1. Fetch current status from the database
+            const extensionRef = ref(db, `rooms/${roomID}/serviceRequests/Extend_Time`);
+            const snap = await get(extensionRef);
+            const currentRequest = snap.val();
+
+            // 2. Check if a request is already pending
+            if (currentRequest && currentRequest.status === "pending") {
+                return Swal.fire({
+                    ...swalConfig,
+                    icon: 'info',
+                    title: 'REQUEST PENDING',
+                    text: 'Please wait for the admin to accept your previous extension request before asking again.',
+                    confirmButtonText: 'UNDERSTOOD'
+                });
+            }
+
+            // 3. If no pending request, proceed with the original input prompt
+            Swal.fire({
+                ...swalConfig,
+                title: 'EXTEND STAY?',
+                text: 'How many hours would you like to add?',
+                input: 'number',
+                inputAttributes: { min: 1, max: 24 },
+                inputValue: 1,
+                showCancelButton: true,
+                confirmButtonText: 'SEND REQUEST'
+            }).then((res) => {
+                if (res.isConfirmed && res.value) {
+                    update(ref(db, `rooms/${roomID}/serviceRequests`), {
+                        Extend_Time: {
+                            status: "pending",
+                            hoursToAdd: parseInt(res.value),
+                            timestamp: Date.now()
+                        }
+                    }).then(() => {
+                        Swal.fire({
+                            ...swalConfig,
+                            icon: 'success',
+                            title: 'SENT',
+                            text: 'Your request has been sent to the admin.',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                    });
+                }
+            });
+        };
+
+        window.guestCheckOut = () => {
+            Swal.fire({ ...swalConfig, title: 'CHECKOUT?', text: 'Lock system and notify staff?', icon: 'warning', showCancelButton: true })
+                .then((res) => {
+                    if (res.isConfirmed) update(roomRef, { status: "Checked-out", isDoorLocked: true, lighting: 'OFF', aircon: 'OFF', "serviceRequests/CHECKOUT": { status: "pending", timestamp: Date.now() } });
+                });
+        };
+
+        // --- COOLDOWNS & PERSISTENCE ---
+        function startControlCooldown(prefix) {
+            const expiry = Date.now() + 60000;
+            localStorage.setItem(`control_cd_${roomID}_${prefix}`, expiry);
+            runControlTimer(prefix, expiry);
+        }
+
+        function runControlTimer(prefix, expiry) {
+            if (prefix === 'light') isLightCooldown = true; else isAcCooldown = true;
+            const overlay = document.getElementById(`${prefix}CooldownOverlay`), cdSec = document.getElementById(`${prefix}CdSeconds`);
+            overlay?.classList.remove('hidden');
+            const itv = setInterval(() => {
+                const rem = Math.ceil((expiry - Date.now()) / 1000);
+                if (rem <= 0) {
+                    clearInterval(itv);
+                    if (prefix === 'light') isLightCooldown = false; else isAcCooldown = false;
+                    overlay?.classList.add('hidden');
+                    localStorage.removeItem(`control_cd_${roomID}_${prefix}`);
+                } else if (cdSec) cdSec.innerText = rem;
+            }, 1000);
+        }
+
+        function startServiceCooldown(type) {
+            const expiry = Date.now() + 300000;
+            localStorage.setItem(`cooldown_${roomID}_${type}`, expiry);
+            runServiceTimer(type, expiry);
+        }
+
+        function runServiceTimer(type, expiry) {
+            activeCooldowns[type] = true;
+            const btn = type === 'Food_Order' ? document.getElementById('trigger-Food_Order') : document.getElementById(`btn-${type}`);
+            const label = document.getElementById(`label-${type}`);
+            const itv = setInterval(() => {
+                const rem = Math.ceil((expiry - Date.now()) / 1000);
+                if (rem <= 0) {
+                    clearInterval(itv);
+                    delete activeCooldowns[type];
+                    localStorage.removeItem(`cooldown_${roomID}_${type}`);
+                    if (btn) btn.classList.remove('btn-pending');
+                } else if (label) {
+                    label.innerText = `Wait ${Math.floor(rem / 60)}:${(rem % 60).toString().padStart(2, '0')}`;
+                    btn?.classList.add('btn-pending');
+                }
+            }, 1000);
+        }
+
+        // --- INITIALIZATION ---
+        // --- INITIALIZATION ---
+        let hasEntered = false;
+
+        onValue(roomRef, (snap) => {
+            const data = snap.val();
+            // If room is Available or Checked-out, force the lock screen/termination
+            if (!data || data.sessionID !== sessionKey || data.status === "Checked-out") {
+                hasEntered = false; // Reset state
+                return terminateSession();
+            }
+
+            document.getElementById('roomDisplay').innerText = `ROOM ${roomID || '--'}`;
+            document.getElementById('entryRoomNum').innerText = roomID || '--';
+
+            // ✅ FIX: Inject Guest Name
+            document.getElementById('guestNameDisplay').innerText =
+                data.guestName || data.name || "Guest";
+
+            const isLocked = data.isDoorLocked ?? true;
+
+            if (isLocked && !hasEntered) {
+                document.getElementById('entrySection').classList.remove('hidden');
+                document.getElementById('mainContent').classList.add('hidden');
+            } else {
+                hasEntered = true;
+                document.getElementById('entrySection').classList.add('hidden');
+                document.getElementById('mainContent').classList.remove('hidden');
+            }
+
+            // This still updates the toggle switch UI inside the dashboard
+            updateUI('door', !isLocked);
+            updateUI('light', data.lighting === 'ON');
+            updateUI('ac', data.aircon === 'ON');
+
+            // ... rest of your checkout/timer logic ...
+
+            // --- LOGIC FOR SCHEDULED CHECKOUT DISPLAY ---
+            if (data.checkOutTimestamp) {
+                const dateObj = new Date(data.checkOutTimestamp);
+
+                // Formats: "May 3, 2026"
+                const dateStr = dateObj.toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                });
+
+                // Formats: "12:00 PM"
+                const timeStr = dateObj.toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                // Inject into the UI
+                document.getElementById('checkOutDisplay').innerHTML = `${dateStr} <br> <span class="text-blue-500">${timeStr}</span>`;
+
+                // Sync the countdown timer
+                startCountdown(data.checkOutTimestamp);
+            } else {
+                document.getElementById('checkOutDisplay').innerText = "Not Scheduled";
+            }
+        });
+
+        function updateUI(prefix, isOn) {
+            const label = document.getElementById(`${prefix}Status`);
+            const dot = document.getElementById(`${prefix}ToggleDot`);
+            const sw = document.getElementById(`${prefix}Switch`);
+            if (label) label.innerText = isOn ? (prefix === 'door' ? 'Unlocked' : 'Active') : (prefix === 'door' ? 'Locked' : 'Inactive');
+            if (dot) dot.className = `w-12 h-6 rounded-full p-1 transition-colors ${isOn ? 'bg-blue-600' : 'bg-slate-700'}`;
+            if (sw) sw.style.transform = isOn ? 'translateX(24px)' : 'translateX(0)';
+        }
+
+        function startCountdown(target) {
+            if (countdownInterval) clearInterval(countdownInterval);
+            countdownInterval = setInterval(() => {
+                const dist = target - Date.now();
+                if (dist <= 0) {
+                    if (!gracePeriodUsed) {
+                        gracePeriodUsed = true;
+                        update(roomRef, { checkOutTimestamp: target + 300000 });
+                    } else {
+                        terminateSession();
+                    }
+                }
+                const h = Math.floor(dist / 3600000).toString().padStart(2, '0');
+                const m = Math.floor((dist % 3600000) / 60000).toString().padStart(2, '0');
+                const s = Math.floor((dist % 60000) / 1000).toString().padStart(2, '0');
+                document.getElementById('timerDisplay').innerText = `${h}:${m}:${s}`;
+            }, 1000);
+        }
+
+        function terminateSession() {
+            isTerminated = true;
+            document.getElementById('mainContent').classList.add('hidden');
+            document.getElementById('entrySection').classList.add('hidden');
+            document.getElementById('terminationSection').classList.remove('hidden');
+        }
+
+        // Initialize persistent UI on load
+        ['light', 'ac'].forEach(p => {
+            const exp = localStorage.getItem(`control_cd_${roomID}_${p}`);
+            if (exp && parseInt(exp) > Date.now()) runControlTimer(p, parseInt(exp));
+        });
+        ['Cleaning', 'Prep', 'Supplies', 'Water', 'Maintenance', 'Food_Order'].forEach(t => {
+            const exp = localStorage.getItem(`cooldown_${roomID}_${t}`);
+            if (exp && parseInt(exp) > Date.now()) runServiceTimer(t, parseInt(exp));
+        });
+
+        // Menu & Cart
+        onValue(ref(db, 'menu'), (s) => {
+            const list = document.getElementById('menuList'), m = s.val() || {};
+            list.innerHTML = '';
+            for (let k in m) {
+                const item = m[k], div = document.createElement('div');
+                div.className = "glass-card p-6 rounded-[2.5rem] flex justify-between items-center";
+                div.innerHTML = `<div><p class='font-black text-xs uppercase'>${item.name}</p><p class='text-blue-500 font-black text-[10px]'>₱${item.price}</p></div>
+                                         <div class='flex items-center gap-4'><button onclick="window.updCart('${k}',-1)" class='w-8 h-8 rounded-full border border-slate-800'>-</button>
+                                         <span id='qty-${k}' class='text-[10px] font-black'>0</span><button onclick="window.updCart('${k}',1)" class='w-8 h-8 rounded-full bg-blue-600'>+</button></div>`;
+                list.appendChild(div);
+            }
+        });
+
+        window.updCart = (k, d) => {
+            cart[k] = Math.max(0, (cart[k] || 0) + d);
+            document.getElementById(`qty-${k}`).innerText = cart[k];
+            get(ref(db, 'menu')).then(s => {
+                let total = 0, m = s.val();
+                for (let id in cart) { if (m[id]) total += cart[id] * m[id].price; }
+                document.getElementById('cartTotal').innerText = `₱${total.toFixed(2)}`;
+            });
+        };
+
+        window.submitFoodOrder = () => {
+            if (Object.values(cart).every(v => v === 0)) return;
+            update(ref(db, `rooms/${roomID}/serviceRequests`), { Food_Order: { ...cart, status: "pending", timestamp: Date.now() } })
+                .then(() => {
+                    Swal.fire({ ...swalConfig, title: 'ORDERED', text: 'Sent to kitchen.', icon: 'success' });
+                    document.getElementById('foodMenu').classList.add('hidden');
+                    startServiceCooldown('Food_Order');
+                });
+        };
+
+        setInterval(() => { if (roomID && !isTerminated) update(roomRef, { lastSeen: Date.now(), isOnline: true }); }, 15000);
+    </script>
+</body>
+</html>
