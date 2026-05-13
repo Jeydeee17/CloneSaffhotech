@@ -1,0 +1,14 @@
+{
+  "name": "qr-access-control",
+  "version": "1.0.0",
+  "description": "Offline QR code door access control system",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.22.2",
+    "jsqr": "^1.4.0"
+  }
+}
